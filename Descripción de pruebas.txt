@@ -1,4 +1,4 @@
-Tengo una base de datos de cassandra levantada con docker en una maquina que tiene un disco duro de 20 gb y 8 gb de ram, la base de datos se levanta de la siguiente manera: CREATE KEYSPACE files WITH replication = {'class':'SimpleStrategy', 'replication_factor' : 1};, en la base de datos se planea almacenar documentos pdfs de 1mb hasta 1GB máximo, por lo que se ha realizado lo siguiente para poder guardarlos:
+Tengo una base de datos de cassandra levantada con docker en una maquina debian que tiene un disco duro de 20 gb y 8 gb de ram, el contenedor se levanta de la siguiente manera: docker run --rm -d -v /root/cassandra-data:/var/lib/cassandra --name cassandra -p 9042:9042 cassandra y la base de datos se levanta de la siguiente manera: CREATE KEYSPACE files WITH replication = {'class':'SimpleStrategy', 'replication_factor' : 1};, en la base de datos se planea almacenar documentos pdfs de 1mb hasta 1GB máximo, por lo que se ha realizado lo siguiente para poder guardarlos:
 const splitPdf = (filePath, chunkSize = 1024 * 1024) => {
   return new Promise((resolve, reject) => {
     // Leer el archivo en memoria
@@ -87,7 +87,7 @@ const sendPdfResponse = async (id) => {
   return assembledBuffer;
 }
 
-En donde se obtiene el pdf de la base de datos, se arma y se devuelve en el endpoint de la siguiente manera: 
+En donde se obtiene el pdf de la base de datos, se arma y se devuelve en el endpoint de la siguiente manera:
 app.get("/getpdf/:id", async (req, res) => {
   const id = req.params.id;
   const assembledBuffer = await sendPdfResponse(id);

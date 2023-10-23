@@ -91,11 +91,7 @@ out
 # Nuxt.js build / generate output
 .nuxt
 dist
-3.pdf
-3.5.pdf
-3.5 - after.pdf
-4.pdf
-5.pdf
+*.pdf
 
 # Gatsby files
 .cache/
