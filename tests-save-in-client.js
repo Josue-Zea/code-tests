@@ -28,16 +28,12 @@ const splitPdf = (filePath, chunkSize = 1024 * 1024) => {
         reject(err);
         return;
       }
-
       // Obtener el tamaño total del archivo
       const fileSize = data.length;
-
       // Calcular el número total de pedazos
       const totalChunks = Math.ceil(fileSize / chunkSize);
-
       // Array para almacenar los pedazos del archivo
       const fileChunks = [];
-
       // Dividir el archivo en pedazos de 1MB y guardarlos en el array
       for (let i = 0; i < totalChunks; i++) {
         const start = i * chunkSize;
@@ -45,7 +41,6 @@ const splitPdf = (filePath, chunkSize = 1024 * 1024) => {
         const chunk = data.slice(start, end);
         fileChunks.push(chunk);
       }
-
       // Resolver la promesa con el array de pedazos
       resolve(fileChunks);
     });
