@@ -1,0 +1,98 @@
+Tengo una base de datos de cassandra levantada con docker en una maquina que tiene un disco duro de 20 gb y 8 gb de ram, la base de datos se levanta de la siguiente manera: CREATE KEYSPACE files WITH replication = {'class':'SimpleStrategy', 'replication_factor' : 1};, en la base de datos se planea almacenar documentos pdfs de 1mb hasta 1GB máximo, por lo que se ha realizado lo siguiente para poder guardarlos:
+const splitPdf = (filePath, chunkSize = 1024 * 1024) => {
+  return new Promise((resolve, reject) => {
+    // Leer el archivo en memoria
+    fs.readFile(filePath, (err, data) => {
+      if (err) {
+        reject(err);
+        return;
+      }
+      // Obtener el tamaño total del archivo
+      const fileSize = data.length;
+      // Calcular el número total de pedazos
+      const totalChunks = Math.ceil(fileSize / chunkSize);
+      // Array para almacenar los pedazos del archivo
+      const fileChunks = [];
+      // Dividir el archivo en pedazos de 1MB y guardarlos en el array
+      for (let i = 0; i < totalChunks; i++) {
+        const start = i * chunkSize;
+        const end = (i + 1) * chunkSize;
+        const chunk = data.slice(start, end);
+        fileChunks.push(chunk);
+      }
+      // Resolver la promesa con el array de pedazos
+      resolve(fileChunks);
+    });
+  });
+}
+
+const saveMetadata = async (idPdf, name, size) => {
+  await client.execute(
+    "INSERT INTO documentos (id, name, size) VALUES (?, ?, ?)",
+    [idPdf, name, size]
+  );
+}
+
+const saveChunk = async (id, chunk_number, chunk) => {
+  await client.execute(
+    "INSERT INTO pdfs (id_pdf, chunk, data) VALUES (?, ?, ?)",
+    [id, chunk_number, chunk],
+    { prepare: true }
+  );
+}
+
+const savePdfInDatabase = async (namePdf) => {
+  // Carga el archivo PDF.
+  const pdfFile = fs.readFileSync(namePdf);
+
+  // Divide el PDF en pedazos de 1 MB.
+  const chunks = await splitPdf(namePdf);
+
+  // Generamos el id del nuevo pdf
+  const id = `${generarID()}`;
+
+  // Guarda los pedazos del PDF en la tabla de datos.
+  for (let i = 0; i < chunks.length; i++) {
+    await saveChunk(id, i + 1, chunks[i]);
+  }
+
+  // Guarda los metadatos del PDF en la tabla de metadatos.
+  await saveMetadata(id, namePdf, pdfFile.length);
+}
+La estrategia es dividir el pdf en pedazos de 1mb cada uno y guardarlos en la base de datos, el atributo data de la tabla pdfs es de tipo blob.
+
+Para recuperar el pdf se hace lo siguiente:
+const getPdfChunks = async (idPdf) => {
+  const query = "SELECT data FROM pdfs WHERE id_pdf = ? ORDER BY chunk ASC";
+  const result = await client.execute(query, [idPdf]);
+
+  if (result.hasError) {
+    throw new Error(result.error);
+  }
+
+  return result.rows;
+}
+
+const assemblePdf = async (chunks) => {
+  return new Promise((resolve, reject) => {
+    const buffers = chunks.map(chunk => chunk.data);
+    const assembledBuffer = Buffer.concat(buffers);
+    resolve(assembledBuffer);
+  });
+}
+
+const sendPdfResponse = async (id) => {
+  const chunks = await getPdfChunks(id);
+  const assembledBuffer = await assemblePdf(chunks);
+  return assembledBuffer;
+}
+
+En donde se obtiene el pdf de la base de datos, se arma y se devuelve en el endpoint de la siguiente manera: 
+app.get("/getpdf/:id", async (req, res) => {
+  const id = req.params.id;
+  const assembledBuffer = await sendPdfResponse(id);
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `attachment; filename=${id}.pdf`);
+  res.status(200).send(assembledBuffer);
+});
+Tengo 1 servidor backend con nodejs, a este servidor le llegan las peticiones de varios clientes, el servidor tiene 16 gb de memoria ram y 20 gb de disco duro, esta arquitectura está devolviendome tiempos muy lentos a lo que necesito, podrías darme algún consejo de que arquitectura, estrategias, o que podría cambiar para mejorar mucho el rendimiento del sistema?

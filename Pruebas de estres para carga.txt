@@ -1,0 +1,21 @@
+3:20 ---- 5 minutos
+Máquina 1 (Windows) = 6 documentos = 1.16 GB
+Máquina 2 (Mac) = 8 documentos = 1.67 GB
+Máquina 3 (Windows) = 6 documentos = 1.16 GB
+
+3:38 ---- 60 minutos
+Máquina 1 (Windows) = 68 documentos = 13.2 GB
+Máquina 2 (Mac) = 58 documentos = 12.19 GB
+Máquina 3 (Windows) = 75 documentos = 14.4 GB
+
+Pruebas en registro mercantil 5 minutos
+3 máquinas windows - 1 conectada por wifi, 2 conectadas por cable de red
+Máquina 1 = 17 documentos = 2.1 GB
+Máquina 2 = 9 documentos = 1.1 GB
+Máquina 3 = 4 documentos = 500 MB
+
+Pruebas en registro mercantil 30 minutos
+3 máquinas windows - 1 conectada por wifi, 2 conectadas por cable de red
+Máquina 1 = 102 documentos = 12.6 GB
+Máquina 2 = 54 documentos = 6.6 GB
+Máquina 3 = 24 documentos = 3 GB
