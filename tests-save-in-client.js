@@ -1,6 +1,6 @@
 const cassandra = require('cassandra-driver');
 const { performance } = require('perf_hooks');
-const pdfkit = require('pdfkit');
+const { Readable } = require('stream');
 const fs = require('fs');
 const keyspace = 'files';
 let contactPoints = ["131.107.5.106"];
@@ -20,7 +20,7 @@ const generarID = () => {
   return Math.floor(Math.random() * 1000000) + 1;
 }
 
-const splitPdf = (filePath, chunkSize = 1024 * 1024) => {
+const splitPdf = (filePath, chunkSize = 15 * 1024 * 1024) => {
   return new Promise((resolve, reject) => {
     // Leer el archivo en memoria
     fs.readFile(filePath, (err, data) => {
@@ -34,10 +34,10 @@ const splitPdf = (filePath, chunkSize = 1024 * 1024) => {
       const totalChunks = Math.ceil(fileSize / chunkSize);
       // Array para almacenar los pedazos del archivo
       const fileChunks = [];
-      // Dividir el archivo en pedazos de 1MB y guardarlos en el array
+      // Dividir el archivo en pedazos de 10MB y guardarlos en el array
       for (let i = 0; i < totalChunks; i++) {
         const start = i * chunkSize;
-        const end = (i + 1) * chunkSize;
+        const end = Math.min((i + 1) * chunkSize, fileSize); // Asegurarse de no exceder el tamaño del archivo
         const chunk = data.slice(start, end);
         fileChunks.push(chunk);
       }
@@ -45,7 +45,7 @@ const splitPdf = (filePath, chunkSize = 1024 * 1024) => {
       resolve(fileChunks);
     });
   });
-}
+};
 
 const saveMetadata = async (idPdf, name, size) => {
   await client.execute(
@@ -99,18 +99,25 @@ const getPdfChunks = async (idPdf) => {
   return result.rows;
 }
 
-const assemblePdf = async (chunks) => {
-  return new Promise((resolve, reject) => {
-    const buffers = chunks.map(chunk => chunk.data);
-    const assembledBuffer = Buffer.concat(buffers);
-    resolve(assembledBuffer);
-  });
-}
-
-const sendPdfResponse = async (id) => {
+const sendPdfResponse = async (id, res) => {
   const chunks = await getPdfChunks(id);
-  const assembledBuffer = await assemblePdf(chunks);
-  return assembledBuffer;
+
+  // Crear un stream de lectura que emite los fragmentos del PDF
+  const pdfStream = new Readable({
+    read() {
+      chunks.forEach(chunk => this.push(chunk.data));
+      this.push(null); // Fin del stream
+    }
+  });
+
+  // Configurar los encabezados de la respuesta
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `attachment; filename=${id}.pdf`);
+
+  // Puede ser útil configurar otros encabezados aquí
+
+  // Pipe el stream al objeto de respuesta
+  pdfStream.pipe(res);
 }
 
 const express = require("express");
@@ -165,10 +172,7 @@ app.get("/loadpdf/:name", async (req, res) => {//100 MB
 app.get("/getpdf/:id", async (req, res) => {
   const id = req.params.id;
   try {
-    const assembledBuffer = await sendPdfResponse(id);
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename=${id}.pdf`);
-    res.status(200).send(assembledBuffer);
+    await sendPdfResponse(id, res);
   } catch (error) {
     console.error(error);
     res.status(500).send('Internal Server Error');

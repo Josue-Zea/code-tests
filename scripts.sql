@@ -17,7 +17,7 @@ CREATE TABLE files.pdfs (
   chunk int,
   data blob,
   PRIMARY KEY (id_pdf, chunk)
-);
+) WITH compression = {'sstable_compression': 'DeflateCompressor'};
 
 /* install docker */
 # Add Docker's official GPG key:
@@ -39,3 +39,68 @@ sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin 
 sudo groupadd docker
 
 sudo usermod -aG docker $USER
+
+
+Ajustar memoria disponible en nodejs
+node --max-old-space-size=<size-in-mb> <path-to-your-app>
+node --max-old-space-size=12288 tests-save-in-client.js // Esto pone a ejecutar el programa
+
+// 2 NODES
+version: '3'
+
+services:
+  cassandra-node1:
+    image: cassandra:latest
+    container_name: cassandra-node1
+    ports:
+      - "9042:9042"
+      - "7000:7000"
+    networks:
+      - cassandra-net
+    volumes:
+      - cassandra-node1-data:/root/cassandra-data
+    environment:
+      - CASSANDRA_SEEDS=cassandra-node1
+
+  cassandra-node2:
+    image: cassandra:latest
+    container_name: cassandra-node2
+    networks:
+      - cassandra-net
+    volumes:
+      - cassandra-node2-data:/root/cassandra-data
+    environment:
+      - CASSANDRA_SEEDS=cassandra-node1
+    depends_on:
+      - cassandra-node1
+
+networks:
+  cassandra-net:
+    driver: bridge
+
+volumes:
+  cassandra-node1-data:
+  cassandra-node2-data:
+
+
+//SINGLE NODE
+version: '3'
+
+services:
+  cassandra-node1:
+    image: cassandra:latest
+    container_name: cassandra-node1
+    ports:
+      - "9042:9042"
+      - "7000:7000"
+    networks:
+      - cassandra-net
+    volumes:
+      - cassandra-node1-data:/root/cassandra-data
+
+networks:
+  cassandra-net:
+    driver: bridge
+
+volumes:
+  cassandra-node1-data:
