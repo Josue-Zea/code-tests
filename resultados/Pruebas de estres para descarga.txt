@@ -126,3 +126,6 @@ CPU         RAM
 NODE
 CPU           RAM
 35 - 40     20 - 25
+
+2 clientes - 23.5 GB - 200 docs
+3 clientes - 28.2 GB - 240 docs
