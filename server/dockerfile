@@ -4,10 +4,12 @@ RUN apk add --update nodejs npm
 WORKDIR /app
 
 COPY package.json /app
+ENV PORT 3000
+ENV DATABASE "131.107.5.106"
 RUN npm install
 COPY . .
 
 # Cambiar por el puerto que vaya a utilizar la aplicación
 EXPOSE 3000
 
-CMD ["node", "index.js"]
+CMD ["node", "--max-old-space-size=12288", "tests-save-in-client.js"]

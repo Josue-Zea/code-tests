@@ -1,9 +1,10 @@
 const cassandra = require('cassandra-driver');
 const { performance } = require('perf_hooks');
 const { Readable } = require('stream');
+const config = require('./config.js');
 const fs = require('fs');
 const keyspace = 'files';
-let contactPoints = ["131.107.5.106"];
+let contactPoints = [`${config.DATABASE}`];
 // let authProvider = new cassandra.auth.PlainTextAuthProvider('cassandra', 'cassandra');
 let client = new cassandra.Client({
   contactPoints,
@@ -180,6 +181,6 @@ app.get("/getpdf/:id", async (req, res) => {
 });
 
 // Escucha en el puerto 3000
-app.listen(3000, () => {
-  console.log("Servidor escuchando en el puerto 3000");
+app.listen(config.PORT, () => {
+  console.log(`Servidor escuchando en el puerto ${config.PORT}`);
 });
