@@ -77,7 +77,7 @@ Intento 2
 Máquina 1 = 161 documentos = 18.9 GB
 
 Intento 3
-Máquina 1 = 161 documentos = 18.9 GB
+Máquina 1 = 160 documentos = 18.8 GB
 
 5.
 Pruebas en máquinas del rm desde vpn - 1 cliente - 1 server - base de datos trozos de 15 mb
